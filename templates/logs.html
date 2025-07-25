@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="main-card mx-auto mt-0">
+  <h2 class="mini-h3"><i class="bi bi-file-earmark-text"></i> Logs dos Processos</h2>
+  <div class="form-hint mb-3">
+    <i class="bi bi-info-circle"></i>
+    Veja os últimos registros de logs dos seus processos PM2.<br>
+    Clique no nome do serviço para expandir e visualizar o log.
+  </div>
+  {% if logs_por_processo %}
+    <div class="accordion" id="accordionLogs">
+      {% for nome, log in logs_por_processo.items() %}
+      <div class="accordion-item" style="background:#101f2e;border-radius:11px;margin-bottom:10px;box-shadow:0 2px 18px #0ae3ff18;">
+        <h2 class="accordion-header" id="heading{{ loop.index }}">
+          <button class="accordion-button collapsed" type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#collapse{{ loop.index }}"
+                  aria-expanded="false"
+                  aria-controls="collapse{{ loop.index }}"
+                  style="font-size:1.18em;font-weight:600;color:#38e9ff;background:#07182a;border-radius:11px;">
+            <i class="bi bi-terminal-fill me-2"></i>{{ nome|capitalize }}
+          </button>
+        </h2>
+        <div id="collapse{{ loop.index }}"
+             class="accordion-collapse collapse"
+             aria-labelledby="heading{{ loop.index }}"
+             data-bs-parent="#accordionLogs">
+          <div class="accordion-body px-2 pt-2 pb-3" style="background:#061522;border-radius:0 0 10px 10px;">
+            <div style="
+              font-family:'JetBrains Mono','Fira Mono','Fira Code','Consolas',monospace;
+              color: #aaffea;
+              font-size: 1.01rem;
+              max-height: 36vh;
+              overflow-y: auto;
+              border-radius: 7px;
+              padding: .7em 1em .5em 1.1em;
+              ">
+              {% for line in log.split('\n') %}
+                <div class="pm2-log-line">
+                  {{ line
+                    | replace('ERR', '<span style="color:#ff6c7b;font-weight:700;">ERR</span>')
+                    | replace('ERROR', '<span style="color:#ff6c7b;font-weight:700;">ERROR</span>')
+                    | replace('error', '<span style="color:#ff6c7b;font-weight:700;">error</span>')
+                    | replace('WARN', '<span style="color:#ffe484;font-weight:700;">WARN</span>')
+                    | replace('WARNING', '<span style="color:#ffe484;font-weight:700;">WARNING</span>')
+                    | replace('INFO', '<span style="color:#36ffe7;">INFO</span>')
+                    | replace('Online', '<span style="color:#7bffc0;">Online</span>')
+                    | safe }}
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info mt-4">Nenhum log encontrado.</div>
+  {% endif %}
+</div>
+{% endblock %}

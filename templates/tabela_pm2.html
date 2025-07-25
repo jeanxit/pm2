@@ -1,0 +1,59 @@
+{% if headers and processos %}
+<div class="table-responsive">
+  <table class="table table-pm2 table-bordered table-sm align-middle mb-0">
+    <thead>
+      <tr>
+        {% for col in headers %}
+          {% if col|lower not in [
+            'cpu', 'mem', 'memory',
+            'namespace', 'version', 'mode', 'watching', 'porta'
+          ] %}
+            <th>{{ col|capitalize }}</th>
+          {% endif %}
+        {% endfor %}
+        <th>Ações</th> <!-- Coluna de ações -->
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in processos %}
+        <tr>
+          {% for col in headers %}
+            {% if col|lower not in [
+              'cpu', 'mem', 'memory',
+              'namespace', 'version', 'mode', 'watching', 'porta'
+            ] %}
+              {% set value = row.get(col, row.get(col.lower(), '-')) %}
+              {% if col|lower == 'status' %}
+                <td>
+                  {% set stat=value|lower %}
+                  <span class="status-badge 
+                    {% if 'online' in stat %}status-online
+                    {% elif 'stop' in stat %}status-stopped
+                    {% elif 'error' in stat %}status-errored
+                    {% elif 'pause' in stat %}status-paused
+                    {% else %}status-unknown
+                    {% endif %}">
+                    {{ value|capitalize }}
+                  </span>
+                </td>
+              {% elif col|lower == 'servidor' %}
+                <td><span class="badge bg-secondary">{{ value }}</span></td>
+              {% else %}
+                <td>{{ value }}</td>
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          <!-- Célula de ações -->
+          <td style="text-align:center;">
+            <button class="btn btn-success btn-sm btn-acao" data-acao="start"   data-nome="{{ row['name'] }}" title="Start"><i class="bi bi-play-fill"></i></button>
+            <button class="btn btn-warning btn-sm btn-acao" data-acao="stop"    data-nome="{{ row['name'] }}" title="Stop"><i class="bi bi-stop-fill"></i></button>
+            <button class="btn btn-info btn-sm btn-acao"    data-acao="restart" data-nome="{{ row['name'] }}" title="Restart"><i class="bi bi-arrow-repeat"></i></button>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <pre>{{ processos }}</pre>
+{% endif %}

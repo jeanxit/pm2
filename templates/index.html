@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Gerenciador PM2 - Ecosystem</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+  <style>
+    /* ... seus estilos iguais ... */
+    body {
+      display: flex;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at 55% 40%, #232b36 60%, #121417 100%);
+    }
+    .sidebar {
+      width: 220px;
+      min-width: 220px;
+      background: linear-gradient(165deg,#162634 78%,#202b3c 100%);
+      color: #369ED8;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      z-index: 100;
+      box-shadow: 2px 0 18px #03e1fa18;
+      border-right: 1.5px solid #1ae9ff33;
+      height: 100vh;
+    }
+    .sidebar-header {
+      font-weight: 800;
+      font-size: 1.35rem;
+      letter-spacing: -.5px;
+      padding: 28px 24px 22px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #369ED8;
+    }
+    .sidebar-nav {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      flex: 1;
+    }
+    .sidebar-nav li {
+      margin: 0;
+    }
+    .sidebar-nav a {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      color: #369ED8;
+      text-decoration: none;
+      padding: 13px 28px 13px 26px;
+      font-weight: 600;
+      font-size: 1.11rem;
+      border-left: 3.5px solid transparent;
+      transition: background .14s, color .15s, border .16s;
+    }
+    .sidebar-nav a:hover, .sidebar-nav a.active {
+      background: #182d3d;
+      color: #369ED8;
+      border-left: 3.5px solid #369ED8;
+    }
+    .sidebar-footer {
+      padding: 18px 20px 16px 26px;
+      color: #369ED8;
+      font-size: .99rem;
+      border-top: 1px solid #1ae9ff22;
+      background: #142231d7;
+      border-radius: 0 0 15px 15px;
+    }
+    .main-content {
+      margin-left: 220px;
+      flex: 1 1 0%;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      background: transparent;
+    }
+    @media (max-width: 700px) {
+      .sidebar {
+        width: 58px;
+        min-width: 58px;
+        transition: width .2s;
+      }
+      .sidebar-header, .sidebar-footer, .sidebar-nav a span {
+        display: none;
+      }
+      .sidebar-nav a {
+        justify-content: center;
+        padding: 15px 0;
+        font-size: 1.3rem;
+      }
+      .main-content {
+        margin-left: 58px;
+        transition: margin .2s;
+      }
+    }
+  </style>
+</head>
+<body>
+    <div id="preloader-global">
+    <div class="preloader-spinner spinner-border text-info" role="status" style="width: 3.5rem; height: 3.5rem; border-width: 4px;"></div>
+    <div class="preloader-text mt-3" style="color: #24b9ff; font-weight: 600;">Carregando...</div>
+  </div>
+  <!-- Sidebar fixa -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <i class="bi bi-terminal-fill"></i> <span>PM2</span>
+    </div>
+    <ul class="sidebar-nav">
+      <li>
+        <a href="/?servidor={{ servidor_idx }}" class="{% if request.path == '/' %}active{% endif %}">
+          <i class="bi bi-gear"></i> <span>Gerenciador</span>
+        </a>
+      </li>
+      <li>
+        <a href="/processos?servidor={{ servidor_idx }}" class="{% if request.path == '/processos' %}active{% endif %}">
+          <i class="bi bi-list-task"></i> <span>Processos</span>
+        </a>
+      </li>
+      <li>
+        <a href="/graficos?servidor={{ servidor_idx }}" class="{% if request.path == '/graficos' %}active{% endif %}">
+          <i class="bi bi-bar-chart"></i> <span>Gráficos</span>
+        </a>
+      </li>
+      <li>
+        <a href="/recursos?servidor={{ servidor_idx }}" class="{% if request.path == '/recursos' %}active{% endif %}">
+          <i class="bi bi-cpu"></i> <span>Recursos</span>
+        </a>
+      </li>
+      <li>
+        <a href="/logs?servidor={{ servidor_idx }}" class="{% if request.path == '/logs' %}active{% endif %}">
+          <i class="bi bi-file-earmark-text"></i> <span>Logs</span>
+        </a>
+      </li>
+    </ul>
+    <div class="sidebar-footer">
+      <small>Rodando em:<br><b>{{ host }}:{{ porta }}</b></small>
+    </div>
+  </nav>
+
+  <!-- Conteúdo principal -->
+  <div class="main-content">
+    <div class="header-glass w-100 mb-1">
+      <div class="container-fluid px-4 d-flex align-items-center justify-content-between">
+        <h1><i class="bi bi-terminal-fill"></i> Ecosystem Manager</h1>
+        <!-- Select de servidor -->
+        <form method="get" action="" class="d-inline-block ms-3" style="min-width:180px;">
+          <label for="servidor" class="form-label mb-0 me-2" style="color:#1ae9ff;font-weight:600;">Servidor:</label>
+         <select name="servidor" id="servidor" class="form-select form-select-sm d-inline-block" style="width:auto;display:inline-block;" onchange="this.form.submit()">
+          {% for srv in servidores %}
+            <option value="{{ loop.index0 }}" {% if loop.index0 == servidor_idx %}selected{% endif %}>{{ srv.nome }}</option>
+          {% endfor %}
+        </select>
+        </form>
+      </div>
+    </div>
+    <div class="fill-container pb-5">
+      <div class="main-card mx-auto mt-0">
+        <div class="form-hint mb-3">
+          <i class="bi bi-info-circle"></i>
+          <span>
+            Para <b>START</b>: informe o <b>diretório</b> do projeto (deve conter <code>ecosystem.config.js ou ecosystem.config.cjs</code>).<br>
+            Para <b>DELETE</b>: só precisa do <b>nome</b> do app no PM2.<br>
+            <span class="text-info"><i class="bi bi-lightbulb"></i> Dica: <b>O nome do app</b> é mostrado na página <a href="/processos?servidor={{ servidor_idx }}"><b>Processos</b></a>.</span>
+          </span>
+        </div>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="modal fade" id="resultadoModal" tabindex="-1" aria-labelledby="resultadoModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="background: #232731; color: #b2faff; border-radius: 14px;">
+              <div class="modal-header border-0 pb-1">
+                <h5 class="modal-title" id="resultadoModalLabel">
+                  <i class="bi bi-terminal"></i> Resultado do Comando
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+              </div>
+              <div class="modal-body" style="font-family:'JetBrains Mono','Fira Mono',monospace; font-size:1.05em; overflow-x:auto;">
+                <pre id="resultadoConteudo" style="background:none; color: #74e3ff; border:none; box-shadow:none; padding:0; margin:0; white-space:pre-wrap; word-break:break-word; max-height: 60vh;">
+{{ messages[0]|safe }}
+                </pre>
+              </div>
+              <div class="modal-footer border-0 pt-2">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <!-- Formulário de ações PM2 -->
+        <form method="POST" action="{{ url_for('action') }}">
+          <input type="hidden" name="servidor_idx" value="{{ servidor_idx }}">
+          <div class="row g-3 align-items-end">
+            <div class="col-12 col-md-4">
+              <label class="form-label" for="acao">Ação</label>
+              <select name="tipo" class="form-select" id="acao" required>
+                <option value="">Selecione...</option>
+                <option value="start">Start (rodar ecosystem)</option>
+                <option value="delete">Delete</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-5 campo-pm2" id="campo-dir-projeto">
+              <label class="form-label" for="dir_projeto">Diretório do Projeto <i class="bi bi-folder2-open" data-bs-toggle="tooltip" title="Exemplo: C:\meus_projetos\app (obrigatório só para START)"></i></label>
+              <input type="text" name="dir_projeto" id="dir_projeto" class="form-control" placeholder="Ex: C:\meus_projetos\loja">
+            </div>
+            <div class="col-12 col-md-3 campo-pm2" id="campo-nome">
+              <label class="form-label" for="nome">Nome do App PM2 <i class="bi bi-question-circle" data-bs-toggle="tooltip" title="Nome exibido na página Processos, necessário para Stop/Restart/Delete"></i></label>
+              <input type="text" name="nome" id="nome" class="form-control" placeholder="Ex: chassisSearch">
+            </div>
+            <div class="col-12 d-flex justify-content-end mt-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-play-fill"></i> Executar
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div> <!-- FIM main-content -->
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{{ url_for('static', filename='index.js') }}"></script>
+  <script>
+    // Esconde o preloader ao carregar a página
+    window.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() {
+        document.getElementById('preloader-global').classList.add('hide');
+      }, 250);
+    });
+
+    // Mostra o preloader ao clicar em links (exceto target="_blank" ou hash)
+    document.addEventListener('DOMContentLoaded', function() {
+      document.body.addEventListener('click', function(e) {
+        let el = e.target;
+        while (el && el !== document.body) {
+          if (el.tagName === 'A') {
+            const href = el.getAttribute('href');
+            const target = el.getAttribute('target');
+            if (
+              href &&
+              !href.startsWith('#') &&
+              target !== '_blank' &&
+              !el.hasAttribute('download') &&
+              !el.hasAttribute('data-no-preload')
+            ) {
+              document.getElementById('preloader-global').classList.remove('hide');
+            }
+            break;
+          }
+          el = el.parentElement;
+        }
+      }, true);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="main-card mx-auto mt-0">
+  <h2 class="mini-h3"><i class="bi bi-bar-chart"></i> Painel de Gráficos PM2</h2>
+  <div class="form-hint mb-3">
+    <i class="bi bi-info-circle"></i>
+    Visualize em tempo real a situação dos processos PM2. Gráfico de barras e sumário numérico.
+  </div>
+  <div class="d-flex flex-column align-items-center">
+    <!-- Gráfico de Barras: ocupa 100% da largura do card, sem scroll -->
+    <div class="mb-4 w-100" style="max-width:100%;">
+      <canvas id="pm2BarChart" style="background: #161a21; border-radius: 16px; box-shadow: 0 5px 22px #25e6ff15; width:100%; max-width:100%; height:220px;"></canvas>
+    </div>
+    <!-- Sumário de Totais -->
+    <div id="statusTotals" class="d-flex flex-wrap justify-content-center gap-3 mt-2"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var statusCounts = {{ status_counts|tojson|safe }};
+  var total = Object.values(statusCounts).reduce((a,b) => a+b, 0);
+
+  const statusLabels = ['Online', 'Stopped', 'Errored', 'Paused', 'Unknown'];
+  const statusKeys   = ['online', 'stopped', 'errored', 'paused', 'unknown'];
+  const statusColors = ['#25f06b','#ff768c','#f15642','#f9e84f','#7bdfff'];
+  const statusClass  = ['status-online','status-stopped','status-errored','status-paused','status-unknown'];
+
+  // Gráfico de Barras responsivo, largura total do container
+  var barCtx = document.getElementById('pm2BarChart').getContext('2d');
+  new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: statusLabels,
+      datasets: [{
+        label: 'Quantidade',
+        data: statusKeys.map(k => statusCounts[k]),
+        backgroundColor: statusColors,
+        borderRadius: 12,
+        barPercentage: 0.62,
+        categoryPercentage: 0.78
+      }]
+    },
+    options: {
+      maintainAspectRatio: false,
+      responsive: true,
+      indexAxis: 'x',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              let value = context.parsed.y || 0;
+              let percent = total ? Math.round(100*value/total) : 0;
+              return `${context.label}: ${value} (${percent}%)`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { color: "#6fe3ff", font: { weight: "bold", size: 15 } },
+          grid: { color: "#223040" }
+        },
+        x: {
+          ticks: { color: "#6fe3ff", font: { size: 15, weight: "bold" } },
+          grid: { color: "#223040" }
+        }
+      }
+    }
+  });
+
+  // Sumário
+  var totalsDiv = document.getElementById('statusTotals');
+  if (total == 0) {
+    totalsDiv.innerHTML = `<div class="alert alert-info">Nenhum processo encontrado.</div>`;
+  } else {
+    totalsDiv.innerHTML = statusKeys.map((k, i) => {
+      if (statusCounts[k] == 0) return '';
+      return `<span class="d-flex align-items-center mb-2">
+        <span class="status-badge ${statusClass[i]}" style="margin-right:9px;min-width:74px;">${statusLabels[i]}</span>
+        <span style="color:#72f6ff;font-weight:700;font-size:1.08rem;">
+          ${statusCounts[k]} 
+          <span style="color:#38ffd1;font-size:0.97em;font-weight:400;">(${Math.round(100*statusCounts[k]/total)}%)</span>
+        </span>
+      </span>`;
+    }).join('');
+  }
+});
+</script>
+{% endblock %}

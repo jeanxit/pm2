@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="main-card mx-auto mt-0" style="max-width:1800px;">
+  <h2 class="mini-h3" style="font-size:2rem;"><i class="bi bi-list-task"></i> Processos PM2</h2>
+  <div class="form-hint mb-3" style="font-size:1.15rem;">
+    <i class="bi bi-info-circle"></i>
+    Veja todos os processos em execução, com status em tempo real.<br>
+    <b>Endereço</b>: IP + porta que o app está rodando (detectado por log recente do PM2).
+  </div>
+  <div id="tabela-pm2">
+    {% if headers and processos %}
+    <div class="table-responsive" style="overflow-x:auto; min-width: 900px; max-width:1750px; margin:auto;">
+      <table class="table table-pm2 table-bordered table-sm align-middle mb-0">
+        <thead style="background: #0d1723;">
+          <tr>
+            {% for col in headers %}
+              {% if col|lower not in [
+                'cpu', 'mem', 'memory',
+                'namespace', 'version', 'mode', 'watching', 'porta'
+              ] %}
+                <th style="padding:18px 26px; color:#f8faff; font-weight:700; border-bottom:2.5px solid #223a5f;">
+                  {{ col|capitalize }}
+                  {% if col|lower == 'endereco' %}
+                    <i class="bi bi-question-circle text-info ms-1"
+                       data-bs-toggle="tooltip"
+                       title="IP e porta extraídos do log do app. Clique para copiar!"></i>
+                  {% endif %}
+                </th>
+              {% endif %}
+            {% endfor %}
+            <th style="padding:18px 26px; color:#f8faff; font-weight:700; border-bottom:2.5px solid #223a5f;">
+              Ações
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in processos %}
+            <tr style="transition:background 0.15s;">
+              {% for col in headers %}
+                {% if col|lower not in [
+                  'cpu', 'mem', 'memory',
+                  'namespace', 'version', 'mode', 'watching', 'porta'
+                ] %}
+                  {% if col|lower == 'status' %}
+                    <td style="padding:14px 22px;">
+                      {% set stat=row[col]|lower %}
+                      <span class="status-badge
+                        {% if 'online' in stat %} status-online
+                        {% elif 'stop' in stat %} status-stopped
+                        {% elif 'error' in stat %} status-errored
+                        {% elif 'pause' in stat %} status-paused
+                        {% else %} status-unknown
+                        {% endif %}">
+                        {{ row[col]|capitalize }}
+                      </span>
+                    </td>
+                  {% elif col|lower == 'endereco' %}
+                    <td style="padding:14px 22px;">
+                      {% if row[col] != "-" %}
+                        <span class="badge bg-info"
+                              style="font-size:1em; letter-spacing:1px; cursor:pointer; user-select:all; padding:7px 15px;"
+                              data-bs-toggle="tooltip"
+                              title="Clique para copiar">
+                          {{ row[col] }}
+                        </span>
+                      {% else %}
+                        <span class="text-secondary">-</span>
+                      {% endif %}
+                    </td>
+                  {% else %}
+                    <td style="padding:14px 22px; color:#e5faff;">{{ row[col] }}</td>
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+              <td style="padding:12px 12px; text-align:center;">
+                <button class="btn btn-success btn-sm btn-acao" data-acao="start"   data-nome="{{ row['name'] }}" title="Start"><i class="bi bi-play-fill"></i></button>
+                <button class="btn btn-warning btn-sm btn-acao" data-acao="stop"    data-nome="{{ row['name'] }}" title="Stop"><i class="bi bi-stop-fill"></i></button>
+                <button class="btn btn-info btn-sm btn-acao"    data-acao="restart" data-nome="{{ row['name'] }}" title="Restart"><i class="bi bi-arrow-repeat"></i></button>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <pre style="font-size:1.12rem; color:#97fdff; background:#15232e; padding:24px; border-radius:11px;">{{ processos }}</pre>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function ativaTooltips() {
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+}
+function ativaCopiarEndereco() {
+  document.querySelectorAll('.badge.bg-info').forEach(function(el) {
+    el.addEventListener('click', function() {
+      if (window.getSelection && document.createRange) {
+        var range = document.createRange();
+        range.selectNodeContents(el);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(el.textContent.trim());
+      }
+      el.setAttribute('title', 'Copiado!');
+      setTimeout(() => { el.setAttribute('title', 'Clique para copiar'); }, 1200);
+    });
+  });
+}
+function ativaHoverTabela() {
+  document.querySelectorAll('tbody tr').forEach(function(row){
+    row.addEventListener('mouseenter', function(){ row.style.background='#24304a'; });
+    row.addEventListener('mouseleave', function(){ row.style.background=''; });
+  });
+}
+function ativaAcoesPM2() {
+  document.querySelectorAll('.btn-acao').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const nome = this.getAttribute('data-nome');
+      const acao = this.getAttribute('data-acao');
+      let dir_projeto = null;
+
+      if (acao === "restart") {
+        dir_projeto = prompt("Informe o diretório do projeto para restart completo (deploy):", "");
+        if (!dir_projeto) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-arrow-repeat"></i>';
+          return;
+        }
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+      fetch("{{ url_for('acao_pm2') }}", {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({nome, acao, dir_projeto})
+      })
+      .then(r => r.json())
+      .then(resp => {
+        setTimeout(atualizaTabela, 800);
+      })
+      .catch(err => {
+        alert("Erro ao executar ação: " + err);
+      });
+    });
+  });
+}
+function atualizaTabela() {
+ fetch("{{ url_for('tabela_pm2_todos') }}")
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('tabela-pm2').innerHTML = data.tabela_html;
+      ativaTooltips();
+      ativaCopiarEndereco();
+      ativaHoverTabela();
+      ativaAcoesPM2();
+    });
+}
+document.addEventListener('DOMContentLoaded', function () {
+  ativaTooltips();
+  ativaCopiarEndereco();
+  ativaHoverTabela();
+  ativaAcoesPM2();
+  setInterval(atualizaTabela, 60000);
+});
+</script>
+{% endblock %}

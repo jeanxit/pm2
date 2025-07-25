@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Gerenciador PM2 - Ecosystem</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+  <style>
+    body {
+      display: flex;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(circle at 55% 40%, #232b36 60%, #121417 100%);
+    }
+    .sidebar {
+      width: 220px;
+      min-width: 220px;
+      background: linear-gradient(165deg,#162634 78%,#202b3c 100%);
+      color: #369ED8;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      z-index: 100;
+      box-shadow: 2px 0 18px #03e1fa18;
+      border-right: 1.5px solid #1ae9ff33;
+      height: 100vh;
+    }
+    .sidebar-header {
+      font-weight: 800;
+      font-size: 1.35rem;
+      letter-spacing: -.5px;
+      padding: 28px 24px 22px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #369ED8;
+    }
+    .sidebar-nav {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      flex: 1;
+    }
+    .sidebar-nav li {
+      margin: 0;
+    }
+    .sidebar-nav a {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      color: #369ED8;
+      text-decoration: none;
+      padding: 13px 28px 13px 26px;
+      font-weight: 600;
+      font-size: 1.11rem;
+      border-left: 3.5px solid transparent;
+      transition: background .14s, color .15s, border .16s;
+    }
+    .sidebar-nav a:hover, .sidebar-nav a.active {
+      background: #182d3d;
+      color: #369ED8;
+      border-left: 3.5px solid #369ED8;
+    }
+    .sidebar-footer {
+      padding: 18px 20px 16px 26px;
+      color: #369ED8;
+      font-size: .99rem;
+      border-top: 1px solid #1ae9ff22;
+      background: #142231d7;
+      border-radius: 0 0 15px 15px;
+    }
+    .main-content {
+      margin-left: 220px;
+      flex: 1 1 0%;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      background: transparent;
+    }
+    .header-glass {
+      background: rgba(30, 44, 60, 0.82);
+      border-radius: 0 0 18px 18px;
+      box-shadow: 0 2px 18px #03e1fa18;
+      border-bottom: 1.5px solid #1ae9ff33;
+      padding-top: 18px;
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+    }
+    .fill-container {
+      flex: 1;
+      padding: 24px 18px 0 18px;
+    }
+    @media (max-width: 700px) {
+      .sidebar {
+        width: 58px;
+        min-width: 58px;
+        transition: width .2s;
+      }
+      .sidebar-header, .sidebar-footer, .sidebar-nav a span {
+        display: none;
+      }
+      .sidebar-nav a {
+        justify-content: center;
+        padding: 15px 0;
+        font-size: 1.3rem;
+      }
+      .main-content {
+        margin-left: 58px;
+        transition: margin .2s;
+      }
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+    <div id="preloader-global">
+    <div class="preloader-spinner spinner-border text-info" role="status" style="width: 3.5rem; height: 3.5rem; border-width: 4px;"></div>
+    <div class="preloader-text mt-3" style="color: #24b9ff; font-weight: 600;">Carregando...</div>
+  </div>
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <i class="bi bi-terminal-fill"></i> <span>PM2</span>
+    </div>
+    <ul class="sidebar-nav">
+      <li><a href="/" class="{% if request.path == '/' %}active{% endif %}"><i class="bi bi-gear"></i> <span>Gerenciador</span></a></li>
+      <li><a href="/processos" class="{% if request.path == '/processos' %}active{% endif %}"><i class="bi bi-list-task"></i> <span>Processos</span></a></li>
+      <li><a href="/graficos" class="{% if request.path == '/graficos' %}active{% endif %}"><i class="bi bi-bar-chart"></i> <span>Gráficos</span></a></li>
+      <li><a href="/recursos" class="{% if request.path == '/recursos' %}active{% endif %}"><i class="bi bi-cpu"></i> <span>Recursos</span></a></li>
+      <li><a href="/logs" class="{% if request.path == '/logs' %}active{% endif %}"><i class="bi bi-file-earmark-text"></i> <span>Logs</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <small>Rodando em:<br><b>{{ host }}:{{ porta }}</b></small>
+    </div>
+  </nav>
+
+  <!-- Conteúdo principal -->
+  <div class="main-content">
+    <div class="header-glass w-100 mb-1">
+      <div class="container-fluid px-4">
+        <h1><i class="bi bi-terminal-fill"></i> Ecosystem Manager</h1>
+      </div>
+    </div>
+    <div class="fill-container pb-5">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function escondePreloader() {
+      const p = document.getElementById('preloader-global');
+      if (p) p.classList.add('hide');
+    }
+
+    function mostraPreloader() {
+      const p = document.getElementById('preloader-global');
+      if (p) p.classList.remove('hide');
+    }
+
+    // Ao terminar de carregar, esconde preloader
+    window.addEventListener('load', () => setTimeout(escondePreloader, 300));
+
+    // Mostra preloader ao clicar em links
+    document.addEventListener('DOMContentLoaded', () => {
+      document.body.addEventListener('click', (e) => {
+        let el = e.target;
+        while (el && el !== document.body) {
+          if (el.tagName === 'A') {
+            const href = el.getAttribute('href');
+            const target = el.getAttribute('target');
+            const download = el.hasAttribute('download');
+            const noPreload = el.hasAttribute('data-no-preload');
+            if (
+              href &&
+              !href.startsWith('#') &&
+              target !== '_blank' &&
+              !download &&
+              !noPreload
+            ) {
+              mostraPreloader();
+            }
+            break;
+          }
+          el = el.parentElement;
+        }
+      }, true);
+    });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

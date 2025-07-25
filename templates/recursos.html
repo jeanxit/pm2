@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="main-card mx-auto mt-0">
+  <h2 class="mini-h3"><i class="bi bi-cpu"></i> Recursos dos Processos</h2>
+  <div class="form-hint mb-3">
+    <i class="bi bi-info-circle"></i>
+    Veja o consumo de <b>CPU</b> e <b>Memória</b> dos processos PM2 em tempo real.
+  </div>
+  <div class="row g-4">
+    <div class="col-12 col-lg-6 d-flex flex-column align-items-center">
+      <h4 style="color:#6eeaff;" class="mb-2"><i class="bi bi-cpu"></i> CPU (%)</h4>
+      <canvas id="cpuChart" width="320" height="220"></canvas>
+    </div>
+    <div class="col-12 col-lg-6 d-flex flex-column align-items-center">
+      <h4 style="color:#7cf7d8;" class="mb-2"><i class="bi bi-memory"></i> Memória (MB)</h4>
+      <canvas id="memChart" width="320" height="220"></canvas>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js para os gráficos -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // Dados vindos do backend (Flask/Jinja)
+  const labels = {{ nomes|tojson|safe }};
+  const cpuData = {{ cpus|tojson|safe }};
+  const memData = {{ mems|tojson|safe }};
+
+  // Gráfico CPU
+  const cpuCtx = document.getElementById('cpuChart').getContext('2d');
+  new Chart(cpuCtx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'CPU (%)',
+        data: cpuData,
+        backgroundColor: 'rgba(103, 232, 249, 0.8)',
+        borderRadius: 16
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { color: "#6eeaff", font: {weight: 'bold'} },
+          grid: { color: "#223040" }
+        },
+        x: {
+          ticks: { color: "#6eeaff" },
+          grid: { color: "#223040" }
+        }
+      }
+    }
+  });
+
+  // Gráfico Memória
+  const memCtx = document.getElementById('memChart').getContext('2d');
+  new Chart(memCtx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Memória (MB)',
+        data: memData,
+        backgroundColor: 'rgba(124, 247, 216, 0.8)',
+        borderRadius: 16
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { color: "#7cf7d8", font: {weight: 'bold'} },
+          grid: { color: "#223040" }
+        },
+        x: {
+          ticks: { color: "#7cf7d8" },
+          grid: { color: "#223040" }
+        }
+      }
+    }
+  });
+});
+</script>
+{% endblock %}
